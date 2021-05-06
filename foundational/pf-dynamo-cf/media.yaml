@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  TableName:
+    Type: String
+    Default: media
+Resources:
+  MediaTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}'
+      AttributeDefinitions:
+        - AttributeName: 'media_id'
+          AttributeType: 'S'
+        - AttributeName: 'animal_id'
+          AttributeType: 'S'
+        - AttributeName: 'organization_id'
+          AttributeType: 'S'
+        - AttributeName: 'legacy_animal_id'
+          AttributeType: 'N'
+        - AttributeName: 'legacy_organization_id'
+          AttributeType: 'N'
+        - AttributeName: 'legacy_media_id'
+          AttributeType: 'N'
+      BillingMode: 'PROVISIONED'
+      KeySchema:
+        - AttributeName: 'media_id'
+          KeyType: 'HASH'
+      GlobalSecondaryIndexes:
+        - IndexName: media_animal_index
+          KeySchema:
+            - AttributeName: 'animal_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: media_organization_index
+          KeySchema:
+            - AttributeName: 'organization_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: media_legacy_animal_index
+          KeySchema:
+            - AttributeName: 'legacy_animal_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: media_legacy_organization_index
+          KeySchema:
+            - AttributeName: 'legacy_organization_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: media_legacy_index
+          KeySchema:
+            - AttributeName: 'legacy_media_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      SSESpecification:
+        SSEEnabled: False 

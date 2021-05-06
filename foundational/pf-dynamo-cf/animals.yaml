@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  TableName:
+    Type: String
+    Default: animals
+Resources:
+  AnimalsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}'
+      AttributeDefinitions:
+        - AttributeName: 'animal_id'
+          AttributeType: 'S'
+      BillingMode: 'PAY_PER_REQUEST'
+      KeySchema:
+        - AttributeName: 'animal_id'
+          KeyType: 'HASH'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      # SSESpecification: This being set to false DOES NOT mean no encryption:
+      # Indicates whether server-side encryption is done using an AWS managed CMK or an AWS owned CMK.
+      SSESpecification:
+        SSEEnabled: False 

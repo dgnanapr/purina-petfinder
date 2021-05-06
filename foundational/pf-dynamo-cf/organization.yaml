@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  TableName:
+    Type: String
+    Default: organization
+Resources:
+  OrganizationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}'
+      AttributeDefinitions:
+        - AttributeName: 'organization_id'
+          AttributeType: 'S'
+        - AttributeName: 'legacy_organization_id'
+          AttributeType: 'N'
+        - AttributeName: 'organization_name'
+          AttributeType: 'S'
+        - AttributeName: 'primary_state'
+          AttributeType: 'S'
+      BillingMode: 'PROVISIONED'
+      GlobalSecondaryIndexes:
+        - IndexName: 'organization_legacy_org_id'
+          KeySchema:
+            - AttributeName: 'legacy_organization_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: 'organization_name_index'
+          KeySchema:
+            - AttributeName: 'organization_name'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+        - IndexName: 'organization_state_index'
+          KeySchema:
+            - AttributeName: 'primary_state'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+      KeySchema:
+        - AttributeName: 'organization_id'
+          KeyType: 'HASH'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      ProvisionedThroughput:
+         ReadCapacityUnits: 1
+         WriteCapacityUnits: 1
+      # SSESpecification: This being set to false DOES NOT mean no encryption:
+      # Indicates whether server-side encryption is done using an AWS managed CMK or an AWS owned CMK.
+      SSESpecification:
+        SSEEnabled: False 

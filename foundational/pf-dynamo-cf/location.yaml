@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  TableName:
+    Type: String
+    Default: location
+Resources:
+  LocationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}'
+      AttributeDefinitions:
+        - AttributeName: 'location_postal_cd'
+          AttributeType: 'S'
+        - AttributeName: 'location_state'
+          AttributeType: 'S'
+        - AttributeName: 'location_id'
+          AttributeType: 'S'
+      BillingMode: 'PROVISIONED'
+      GlobalSecondaryIndexes:
+        - IndexName: location_postal_cd_index
+          KeySchema:
+            - AttributeName: 'location_postal_cd'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: location_state_index
+          KeySchema:
+            - AttributeName: 'location_state'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      KeySchema:
+        - AttributeName: 'location_id'
+          KeyType: 'HASH'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      ProvisionedThroughput:
+         ReadCapacityUnits: 5
+         WriteCapacityUnits: 5
+      # SSESpecification: This being set to false DOES NOT mean no encryption:
+      # Indicates whether server-side encryption is done using an AWS managed CMK or an AWS owned CMK.
+      SSESpecification:
+        SSEEnabled: False 

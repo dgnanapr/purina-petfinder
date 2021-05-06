@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  TableName:
+    Type: String
+    Default: animal_attributes
+Resources:
+  AnimalAttributeTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}'
+      AttributeDefinitions:
+      - AttributeName: 'animal_type'
+        AttributeType: 'S'
+      BillingMode: 'PROVISIONED'
+      KeySchema:
+      - AttributeName: 'animal_type'
+        KeyType: 'HASH'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      # SSESpecification: This being set to false DOES NOT mean no encryption:
+      # Indicates whether server-side encryption is done using an AWS managed CMK or an AWS owned CMK.
+      SSESpecification:
+        SSEEnabled: False
+  AnimalAttributeWorkerUser:
+    Type: AWS::IAM::User
+    Properties: 
+      UserName: ci-worker-animal-attributes
+  AnimalAttributeEditorPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${TableName}-editor-policy'
+      Users: 
+        - !Ref AnimalAttributeWorkerUser
+      PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Sid: !Sub 'EditTable'
+              Effect: Allow
+              Action:
+                - 'dynamodb:DeleteItem'
+                - 'dynamodb:DescribeTable'
+                - 'dynamodb:GetItem'
+                - 'dynamodb:BatchGetItem'
+                - 'dynamodb:BatchWriteItem'
+                - 'dynamodb:PutItem'
+                - 'dynamodb:Scan'
+                - 'dynamodb:Query'
+                - 'dynamodb:UpdateItem'
+                - 'dynamodb:GetRecords'
+              Resource: !GetAtt AnimalAttributeTable.Arn
+

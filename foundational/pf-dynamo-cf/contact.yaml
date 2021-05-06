@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  TableName:
+    Type: String
+    Default: contact
+Resources:
+  LocationTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${TableName}'
+      AttributeDefinitions:
+        - AttributeName: 'contact_id'
+          AttributeType: 'S'
+        - AttributeName: 'email'
+          AttributeType: 'S'
+        - AttributeName: 'last_name'
+          AttributeType: 'S'
+        - AttributeName: 'first_name'
+          AttributeType: 'S'
+        - AttributeName: 'legacy_user_id'
+          AttributeType: 'N'
+        - AttributeName: 'organization_id'
+          AttributeType: 'S'
+      BillingMode: 'PROVISIONED'
+      GlobalSecondaryIndexes:
+        - IndexName: 'contact_email_index'
+          KeySchema:
+            - AttributeName: 'email'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: 'contact_last_name_index'
+          KeySchema:
+            - AttributeName: 'last_name'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: 'contact_first_name_index'
+          KeySchema:
+            - AttributeName: 'first_name'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: 'contact_legacy_user_id_index'
+          KeySchema:
+            - AttributeName: 'legacy_user_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+        - IndexName: 'contact_organization_id_index'
+          KeySchema:
+            - AttributeName: 'organization_id'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'ALL'
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
+      KeySchema:
+        - AttributeName: 'contact_id'
+          KeyType: 'HASH'
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: False
+      ProvisionedThroughput:
+         ReadCapacityUnits: 5
+         WriteCapacityUnits: 5
+      # SSESpecification: This being set to false DOES NOT mean no encryption:
+      # Indicates whether server-side encryption is done using an AWS managed CMK or an AWS owned CMK.
+      SSESpecification:
+        SSEEnabled: False 
