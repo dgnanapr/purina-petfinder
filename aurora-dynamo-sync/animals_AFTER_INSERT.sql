@@ -1,6 +1,6 @@
--- Step 3 Create rds_cdc_TR_animals_AI  TRIGGER , this triggers calls the rds_lambda_cdc to send cdc data to a common lambda function rds_lamdbda_sns
+DROP TRIGGER animals_AFTER_INSERT;
 DELIMITER ;;
-CREATE TRIGGER rds_cdc_TR_animals_AI
+CREATE TRIGGER animals_AFTER_INSERT
   AFTER INSERT ON animals
   FOR EACH ROW
 BEGIN

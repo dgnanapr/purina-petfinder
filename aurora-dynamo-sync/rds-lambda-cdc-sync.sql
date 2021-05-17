@@ -37,7 +37,7 @@ DELIMITER ;;
   CREATE  DEFINER=`pfadmin`@`%`  PROCEDURE rds_lambda_cdc(IN tableName VARCHAR(255),IN pk VARCHAR(255), IN operation VARCHAR(255), IN cdc_payload TEXT) LANGUAGE SQL
   BEGIN
     CALL mysql.lambda_async(
-         'arn:aws:lambda:us-east-1:462477274376:function:Location-RDS-Dynamoinvoke_lambda_funcinvoke_lambda_funcinvoke_lambda_func',
+         'arn:aws:lambda:us-east-1:462477274376:function:RdsCdcReceiver',
          CONCAT('{"table_name" : "', tableName,
              '", "pk" : "', pk,
              '", "operation" : "', operation,
@@ -58,3 +58,5 @@ BEGIN
 END
 ;;
 DELIMITER ;
+
+
