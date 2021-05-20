@@ -1,0 +1,334 @@
+import json
+import requests
+import os
+import cachetools.func
+import boto3
+
+print('Loading function')
+
+maxSize = 64
+ttl = 300
+
+def lambda_handler(event, context):
+    #print("Received event: " + json.dumps(event, indent=2))
+    # print(event["Records"][0])
+    # print(dir(event["Records"][0]["dynamodb"]))
+    # print(event["Records"][0]["dynamodb"]["Keys"].get("organization_id").values())
+
+    for record in event['Records']:
+        print(event)
+        animalId = dynamoStriper(record['dynamodb']['Keys'])['animal_id']
+        print(animalId)
+        
+        if  record['eventName'] == 'REMOVE':
+            print('deleteing')
+            parsedString = dynamoStriper(record['dynamodb']['OldImage'])
+            doDelete(getField(parsedString,"legacy_animal_id"),getToken())
+        else:
+            
+            parsedString = dynamoStriper(record['dynamodb']['NewImage'])
+            
+            
+            animalType = AnimalTypes[parsedString["animal_type"]]
+            
+            species = getAnimalSpecies(animalType, getToken())
+            breeds = getAnimalBreeds(animalType, getToken())
+            
+            legacyRequest = convertToCoreObject(animalType,breeds,species,parsedString)
+            
+                
+            #actual deletes only hapen for draft on both sides so we just treat modify as a delete too for published
+            if record['eventName'] == 'MODIFY':
+                # print(legacyRequest)
+                client = getField(parsedString,"update_by_client")
+                
+                if client != os.environ['client_id']:
+                    oldImage = dynamoStriper(record['dynamodb']['OldImage'])
+                    oldLegacy = convertToCoreObject(animalType,breeds,species,oldImage)
+                    # print(oldLegacy)
+                    
+                    print('do the update to core')
+                    #Check if there is nothing to change to avoid update loops
+                    if not(areRequestsTheSame(legacyRequest,oldLegacy)):
+                        doUpdate(legacyRequest,getField(parsedString,"legacy_animal_id"),getToken())
+                    else:
+                        print("objects were the same")
+                else:
+                    print('Update From Core')
+                
+                
+            if record['eventName'] == 'INSERT':
+                
+                client = getField(parsedString,"create_by_client")
+                #checking if this is a object created in dynamo
+                #if the object came from core origonaly this will already be populated 
+                if client != os.environ['client_id']:
+                    print("do the insert to core")
+                    try:
+                        resp = doCreate(legacyRequest,getToken())
+                        print(resp)
+                        updateDynamo(geDyanmoTable(),animalId,resp['animal']['id'])
+                    except:
+                        print("Exception")
+                        print(event)
+                else:
+                    print('Insert From Core')
+        
+    return 'Successfully processed {} records.'.format(len(event['Records']))
+
+
+def dynamoStriper(event):
+        
+    for column in event:
+        if "S" in event[column]:
+            event[column] = event[column]["S"]
+        elif "N" in event[column]:
+            event[column] = "" + event[column]["N"]
+        elif "BOOL" in event[column]:
+            event[column] = "" + str(event[column]["BOOL"])
+        elif "NULL" in event[column]:
+            event[column] = None
+        elif "L" in event[column]:
+            event[column] = dynamoStriper({"temp":event[column]['L']})["temp"]
+        elif type(event[column]) == list:
+            for i in range(len(event[column])):
+                event[column][i] = dynamoStriper({"temp":event[column][i]})["temp"]
+        else:
+            event[column] =  dynamoStriper(event[column])
+    
+    return event
+    
+    
+@cachetools.func.ttl_cache(maxSize, ttl)
+def geDyanmoTable():
+    dynamodb = boto3.resource('dynamodb', endpoint_url="https://dynamodb.us-east-1.amazonaws.com")
+
+    return dynamodb.Table('animals')
+    
+def updateDynamo(table,id,legacyId):
+    response = table.update_item(
+        Key={
+            'animal_id': id
+        },
+        UpdateExpression="set legacy_animal_id=:r",
+        ExpressionAttributeValues={
+            ':r': str(legacyId)
+        },
+        ReturnValues="UPDATED_NEW"
+    )
+    
+@cachetools.func.ttl_cache(maxSize, ttl)
+def getToken():
+    url = os.environ['Host'] + 'oauth/access-token'
+    payload = {'grant_type': 'client_credentials', 'client_id': os.environ['client_id'], 'client_secret': os.environ['client_secret']}
+
+    r = requests.post(url, data=json.dumps(payload), headers = {'Content-Type': 'application/json'}, verify=False)
+    
+    return r.json()["access_token"]
+    
+@cachetools.func.ttl_cache(maxSize, ttl)
+def getAnimalSpecies(id, token):
+    url = os.environ['Host'] + 'animal-types/' + str(id) + '/species'
+    
+    r = requests.get(url, headers = {'Authorization': token}, verify=False)
+    
+    return r.json()['species']
+    
+@cachetools.func.ttl_cache(maxSize, ttl)
+def getAnimalBreeds(id, token):
+    url = os.environ['Host'] + 'animal-types/' + str(id) + '/breeds'
+    
+    #https://internal-opsworks-coreapie-1nfrqe8umfu45-857031494.us-east-1.elb.amazonaws.com/v2/animal-types/{id}/breeds
+    
+    r = requests.get(url, headers = {'Authorization': token}, verify=False)
+    
+    return r.json()['breeds']
+
+def doCreate(payload, token):
+    url = os.environ['Host'] + 'animals'
+    
+    r = requests.post(url, data=json.dumps(payload), headers = {'Authorization': token}, verify=False)
+    return r.json()
+    
+def doDelete(animalId, token):
+    url = os.environ['Host'] + 'animals/' + animalId
+    
+    r = requests.delete(url, headers = {'Authorization': token}, verify=False)
+
+def doUpdate(payload, animalId, token):
+    url = os.environ['Host'] + 'animals/' + animalId
+    
+    r = requests.put(url, data=json.dumps(payload), headers = {'Authorization': token}, verify=False)
+    print(r.json())
+    
+    
+
+def parseLookup(resp,species):
+    for obj in resp:
+        if obj['name'] == species:
+            return obj['id']
+    return None
+
+def getAtributes(parsedString):
+    attr = []
+
+    houseTrained = getField(parsedString,'house_trained')
+    if houseTrained is not None and houseTrained:
+        attr.append('House trained')
+        
+    declawed = getField(parsedString,'declawed')
+    if declawed is not None and declawed:
+        attr.append('Declawed')
+        
+    spay = getField(parsedString,'spayed_neutered')
+    if spay is not None and spay:
+        attr.append('Spay/Neuter')
+        
+    needs = getField(parsedString,'special_needs')
+    if needs is not None and needs:
+        attr.append('Special needs')
+        
+    vaccinated = getField(parsedString,'vaccinated')
+    if vaccinated is not None and vaccinated:
+        attr.append('Shots Current')
+        
+    return attr
+    
+def getHomeAttr(parsedString):
+    arr = {}
+    goodWith = getField(parsedString,'good_with')
+    for i in goodWith:
+        if i == 'dogs':
+            arr['good_with_dogs'] = True
+        if i == 'cats':
+            arr['good_with_cats'] = True
+        if i == 'children_under_8' or i == 'children_8_and_up':
+            arr['good_with_children'] = True
+    
+    badWith = getField(parsedString,'bad_with')
+    for i in badWith:
+        if i == 'dogs':
+            arr['good_with_dogs'] = False
+        if i == 'cats':
+            arr['good_with_cats'] = False
+        if i == 'children_under_8' or i == 'children_8_and_up':
+            arr['good_with_children'] = False
+    
+    return arr
+
+AdoptionStatus = {
+    'Adoptable':'adoptable',
+    'Adoption Pending':'adoption-pending',
+    'Adopted':'adopted',
+    'Found':'found',
+    'Hold':'hold',
+    'Other':'other',
+     None:None
+}
+
+AnimalTypes = {
+    'Barnyard':7,
+    'Bird':4,
+    'Cat':3,
+    'Dog':2,
+    'Horse':9,
+    'Rabbit':8,
+    'Scales, Fins, Other':6,
+    'Small-Furry':1
+}
+
+def convertToCoreObject(animalType,breeds,species,parsedString):
+    resp = CoreAPIBody(
+                        getField(parsedString,"legacy_organization_id")
+                        ,getField(parsedString,"organization_location_id")
+                        ,getField(parsedString,"organization_contact_id")
+                        ,animalType
+                        ,parseLookup(species,getField(parsedString,"species"))
+                        ,parseLookup(breeds,getField(parsedString,"primary_breed"))
+                        ,parseLookup(breeds,getField(parsedString,"secondary_breed"))
+                        ,getField(parsedString,"mixed_breed"),
+                        None#unknown breed
+                        ,getField(parsedString,"primary_color")
+                        ,getField(parsedString,"secondary_color")
+                        ,getField(parsedString,"tertiary_color")
+                        ,getField(parsedString,"age")
+                        ,getField(parsedString,"sex")
+                        ,getField(parsedString,"size")
+                        ,getField(parsedString,"coat_length")
+                        ,getField(parsedString,"animal_name")
+                        ,getField(parsedString,"description")
+						,None#extended desc
+                        ,getField(parsedString,"internal_notes")
+                        ,getField(parsedString,"intake_type")#arrival
+                        ,getField(parsedString,"intake_date")#arrivalDate
+                        ,getField(parsedString,"adoption_date")
+                        ,getField(parsedString,"birth_date")
+                        ,getField(parsedString,"organization_animal_id")
+                        ,getField(parsedString,"record_status")
+                        ,AdoptionStatus[getField(parsedString,"adoption_status")]
+                        ,getAtributes(parsedString)
+                        ,getField(parsedString,"special_needs_notes")
+                        ,getHomeAttr(parsedString)
+                        ,getField(parsedString,"personality_traits")
+                        ,getField(parsedString,"adoption_fee")
+                        ,getField(parsedString,"adoption_fee_waived")
+                        ,getField(parsedString,"display_adoption_fee")
+                        ,getField(parsedString,"import_updates_enabled")
+                        ,getField(parsedString,"import_deletes_enabled"))
+    return resp
+
+def getField(obj, name):
+    if name in obj and (obj[name] == 'True' or obj[name] == 'False'):
+        return obj[name] == 'True'
+    if name in obj:
+        return obj[name]
+    return None
+
+def CoreAPIBody(organization_id,location_id,contact_id,type_id,species_id,primary_breed_id,secondary_breed_id,is_mixed_breed,is_unknown_breed,
+                 primary_color,secondary_color,tertiary_color,age,sex,size,coat_length,name,description,extended_description,internal_notes,arrival,
+                 arrival_date,adoption_date,birth_date,organization_animal_identifier,status,adoption_status,attributes,special_needs_notes,
+                 home_environment_attributes,tags,adoption_fee,adoption_fee_waived,display_adoption_fee,import_updates_enabled,import_deletes_enabled):
+    obj = {}
+    obj["organization_id"] = organization_id
+    obj["location_id"] = location_id
+    obj["contact_id"] = contact_id
+    obj["type_id"] = type_id
+    obj["species_id"] = species_id
+    obj["primary_breed_id"] = primary_breed_id
+    obj["secondary_breed_id"] = secondary_breed_id
+    obj["is_mixed_breed"] = is_mixed_breed
+    obj["is_unknown_breed"] = is_unknown_breed
+    obj["primary_color"] = primary_color
+    obj["secondary_color"] = secondary_color
+    obj["tertiary_color"] = tertiary_color
+    obj["age"] = age
+    obj["sex"] = sex
+    obj["size"] = size
+    obj["coat_length"] = coat_length
+    obj["name"] = name
+    obj["description"] = description
+    obj["extended_description"] = extended_description
+    obj["internal_notes"] = internal_notes
+    obj["arrival"] = arrival
+    obj["arrival_date"] = arrival_date
+    obj["adoption_date"] = adoption_date
+    obj["birth_date"] = birth_date
+    obj["organization_animal_identifier"] = organization_animal_identifier
+    obj["status"] = status
+    obj["adoption_status"] = adoption_status
+    obj["attributes"] = attributes #array
+    obj["special_needs_notes"] = special_needs_notes
+    obj["home_environment_attributes"] = home_environment_attributes # good with map
+    obj["tags"] = tags #array
+    obj["adoption_fee"] = adoption_fee #double
+    obj["adoption_fee_waived"] = adoption_fee_waived #boolean
+    obj["display_adoption_fee"] = display_adoption_fee #boolean
+    obj["import_updates_enabled"] = import_updates_enabled #boolean
+    obj["import_deletes_enabled"] = import_deletes_enabled #boolean
+    return obj
+    
+def areRequestsTheSame(obj1,obj2):
+    for attr in obj1:
+        if obj1[attr] != obj2[attr]:
+            return False
+    return True
