@@ -1,5 +1,4 @@
---  Step 3 Create rds_cdc_TR_animals_AI  TRIGGER , this triggers calls the rds_lambda_cdc to send cdc data to a common lambda function rds_lamdbda_sns
---  DROP TRIGGER rds_cdc_TR_animals_AI;
+--  Step 3.2 Create rds_cdc_TR_animals_AI  TRIGGER , this triggers calls the rds_lambda_cdc to send cdc data to a common lambda function rds_lamdbda_sns
 DELIMITER ;;
 CREATE TRIGGER rds_cdc_TR_animals_AI
   AFTER INSERT ON animals
@@ -15,6 +14,9 @@ IF NEW.created_by is NOT NULL THEN
 END IF;
 IF NEW.created_by_client_id is NOT NULL THEN
     SET payload = CONCAT(payload,'\'created_by_client_id\' : \'', NEW.created_by_client_id, '\','); 
+END IF;
+IF NEW.created_by_user_id is NOT NULL THEN
+    SET payload = CONCAT(payload,'\'created_by_user_id\' : \'', NEW.created_by_user_id, '\','); 
 END IF;
 IF NEW.created_at is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'created_at\' : \'', NEW.created_at, '\',');
