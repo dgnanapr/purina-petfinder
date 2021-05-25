@@ -73,10 +73,10 @@ IF NEW.organization_animal_identifier is NOT NULL THEN
 END IF;
 
 IF NEW.animal_age_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_age_id\' : \'', NEW.animal_age_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_age_id\' : \'',  (SELECT NAME FROM animal_ages WHERE ID= NEW.animal_age_id), '\',');
 END IF;
 IF NEW.animal_type_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_type_id\' : \'', NEW.animal_type_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_type_id\' : \'', (SELECT NAME FROM animal_types WHERE ID= NEW.animal_type_id), '\',');
 END IF;
 IF NEW.organization_contact_id is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'organization_contact_id\' : \'', NEW.organization_contact_id, '\',');
@@ -86,42 +86,42 @@ IF NEW.organization_location_id is NOT NULL THEN
 END IF;
 
 IF NEW.animal_primary_breed_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_primary_breed_id\' : \'', NEW.animal_primary_breed_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_primary_breed_id\' : \'', (SELECT NAME FROM animal_breeds WHERE ID = NEW.animal_primary_breed_id), '\',');
 END IF;
 IF NEW.animal_primary_color_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_primary_color_id\' : \'', NEW.animal_primary_color_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_primary_color_id\' : \'', (SELECT NAME FROM animal_colors WHERE ID = NEW.animal_primary_color_id AND animal_type_id=NEW.animal_type_id), '\',');
 END IF;
 IF NEW.primary_photo_id is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'primary_photo_id\' : \'', NEW.primary_photo_id, '\',');
 END IF;
 IF NEW.animal_secondary_breed_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_secondary_breed_id\' : \'', NEW.animal_secondary_breed_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_secondary_breed_id\' : \'',  (SELECT NAME FROM animal_breeds WHERE ID = NEW.animal_secondary_breed_id), '\',');
 END IF;
 
 IF NEW.animal_secondary_color_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_secondary_color_id\' : \'', NEW.animal_secondary_color_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_secondary_color_id\' : \'',(SELECT NAME FROM animal_colors WHERE ID =  NEW.animal_secondary_color_id AND animal_type_id=NEW.animal_type_id), '\',');
 END IF;
 IF NEW.animal_tertiary_color_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_tertiary_color_id\' : \'', NEW.animal_tertiary_color_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_tertiary_color_id\' : \'', (SELECT NAME FROM animal_colors WHERE ID =  NEW.animal_tertiary_color_id AND animal_type_id=NEW.animal_type_id), '\',');
 END IF;
 IF NEW.animal_sex_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_sex_id\' : \'', NEW.animal_sex_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_sex_id\' : \'',(SELECT NAME FROM animal_sexes WHERE ID =  NEW.animal_sex_id), '\',');
 END IF;
 IF NEW.animal_size_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_size_id\' : \'', NEW.animal_size_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_size_id\' : \'',(SELECT NAME FROM animal_sizes WHERE ID =  NEW.animal_size_id), '\',');
 END IF;
 
 IF NEW.animal_species_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_species_id\' : \'', NEW.animal_species_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_species_id\' : \'', (SELECT NAME FROM animal_species WHERE ID =  NEW.animal_species_id AND animal_type_id=NEW.animal_type_id), '\',');
 END IF;
 IF NEW.animal_adoption_status_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_adoption_status_id\' : \'', NEW.animal_adoption_status_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_adoption_status_id\' : \'', (SELECT NAME FROM animal_adoption_statuses WHERE ID =  NEW.animal_adoption_status_id), '\',');
 END IF;
 IF NEW.animal_coat_length_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_coat_length_id\' : \'', NEW.animal_coat_length_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_coat_length_id\' : \'', (SELECT NAME FROM animal_coat_lengths WHERE ID =   NEW.animal_coat_length_id), '\',');
 END IF;
 IF NEW.animal_arrival_option_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'animal_arrival_option_id\' : \'', NEW.animal_arrival_option_id, '\',');
+	SET payload = CONCAT(payload,'\'animal_arrival_option_id\' : \'', (SELECT NAME FROM animal_arrival_options WHERE ID =   NEW.animal_arrival_option_id), '\',');
 END IF;
 IF NEW.adopter_adoption_inquiry_id is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'adopter_adoption_inquiry_id\' : \'', NEW.adopter_adoption_inquiry_id, '\',');
