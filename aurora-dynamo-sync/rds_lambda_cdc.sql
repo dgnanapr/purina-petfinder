@@ -5,7 +5,7 @@ CREATE DEFINER=`pfadmin`@`%` PROCEDURE `rds_lambda_cdc`(IN tableName VARCHAR(255
 BEGIN
     CALL mysql.lambda_async(    
          -- 'arn:aws:lambda:us-east-1:462477274376:function:RdsCdcReceiver',
-         'arn:aws:lambda:us-east-1:462477274376:function:RdsCdcReceiver:V2',
+         'arn:aws:lambda:us-east-1:462477274376:function:npus-dv-petfesbbc-rdscdcreceiver-use1a-lambda',
          CONCAT('{"table_name" : "', tableName,
              '", "id" : "', id,
              '", "cdc_operation" : "', cdc_operation,
