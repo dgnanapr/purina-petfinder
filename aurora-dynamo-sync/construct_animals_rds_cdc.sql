@@ -66,7 +66,7 @@ OPEN trigger_cursor;
 
 FETCH trigger_cursor INTO v_id,v_status,v_created_by,v_created_by_client_id,v_created_by_user_id,v_created_at,v_updated_at,v_updated_by,v_updated_by_client_id,v_updated_by_user_id,v_arrival_date,v_adoption_date,v_birth_date,v_description,v_extended_description,v_internal_notes,v_special_needs_notes,v_marked_for_deletion,v_mixed_breed,v_unknown_breed,v_name,v_organization_animal_identifier,v_animal_age_id,v_animal_type_id,v_organization_contact_id,v_organization_location_id,v_animal_primary_breed_id,v_animal_primary_color_id,v_primary_photo_id,v_animal_secondary_breed_id,v_animal_secondary_color_id,v_animal_tertiary_color_id,v_animal_sex_id,v_animal_size_id,v_animal_species_id,v_animal_adoption_status_id,v_animal_coat_length_id,v_animal_arrival_option_id,v_adopter_adoption_inquiry_id,v_organization_id,v_adoption_status_change_date,v_published_date,v_transferred_date,v_transferred_from_shelterid,v_transferred_from_organization_id,v_tags,v_adoption_fee,v_adoption_fee_waived,v_display_adoption_fee,v_import_updates_enabled,v_import_deletes_enabled,v_good_with_children,v_good_with_dogs,v_good_with_cats,v_good_with_other_animals,v_other_animals ; 
 
-SET payload = (SELECT CONCAT('{ \'id\' : \'', v_id, '\','));
+SET payload = (SELECT CONCAT('{ \'id\' :', v_id, ','));
 IF v_status is NOT NULL THEN
     SET payload = CONCAT(payload,'\'status\' : \'', v_status, '\',');
 END IF;
@@ -77,7 +77,7 @@ IF v_created_by_client_id is NOT NULL THEN
     SET payload = CONCAT(payload,'\'created_by_client_id\' : \'', v_created_by_client_id, '\','); 
 END IF;
 IF v_created_by_user_id is NOT NULL THEN
-    SET payload = CONCAT(payload,'\'created_by_user_id\' : \'', v_created_by_user_id, '\','); 
+    SET payload = CONCAT(payload,'\'created_by_user_id\' :  ', v_created_by_user_id,  ','); 
 END IF;
 IF v_created_at is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'created_at\' : \'', v_created_at, '\',');
@@ -140,10 +140,10 @@ IF v_animal_type_id is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'animal_type_id\' : \'', (SELECT NAME FROM animal_types WHERE ID= v_animal_type_id), '\',');
 END IF;
 IF v_organization_contact_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'organization_contact_id\' : \'', v_organization_contact_id, '\',');
+	SET payload = CONCAT(payload,'\'organization_contact_id\' : ', v_organization_contact_id, ',');
 END IF;
 IF v_organization_location_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'organization_location_id\' : \'', v_organization_location_id, '\',');
+	SET payload = CONCAT(payload,'\'organization_location_id\' : ', v_organization_location_id,  ',');
 END IF;
 
 IF v_animal_primary_breed_id is NOT NULL THEN
@@ -188,7 +188,7 @@ IF v_adopter_adoption_inquiry_id is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'adopter_adoption_inquiry_id\' : \'', v_adopter_adoption_inquiry_id, '\',');
 END IF;
 IF v_organization_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'organization_id\' : \'', v_organization_id, '\',');
+	SET payload = CONCAT(payload,'\'organization_id\' :  ', v_organization_id,  ',');
 END IF;
 IF v_adoption_status_change_date is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'adoption_status_change_date\' : \'', v_adoption_status_change_date, '\',');
@@ -203,37 +203,37 @@ IF v_transferred_from_shelterid is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'transferred_from_shelterid\' : \'', v_transferred_from_shelterid, '\',');
 END IF;
 IF v_transferred_from_organization_id is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'transferred_from_organization_id\' : \'', v_transferred_from_organization_id, '\',');
+	SET payload = CONCAT(payload,'\'transferred_from_organization_id\' :  ', v_transferred_from_organization_id,  ',');
 END IF;
 IF v_tags is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'tags\' : \'', v_tags, '\',');
 END IF;
 IF v_adoption_fee is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'adoption_fee\' : \'', v_adoption_fee, '\',');
+	SET payload = CONCAT(payload,'\'adoption_fee\' : ', v_adoption_fee, ',');
 END IF;
 IF v_adoption_fee_waived is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'adoption_fee_waived\' : \'', v_adoption_fee_waived, '\',');
+	SET payload = CONCAT(payload,'\'adoption_fee_waived\' :  ', v_adoption_fee_waived,  ',');
 END IF;
 IF v_display_adoption_fee is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'display_adoption_fee\' : \'', v_display_adoption_fee, '\',');
+	SET payload = CONCAT(payload,'\'display_adoption_fee\' : ', v_display_adoption_fee,  ',');
 END IF;
 IF v_import_updates_enabled is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'import_updates_enabled\' : \'', v_import_updates_enabled, '\',');
+	SET payload = CONCAT(payload,'\'import_updates_enabled\' :  ', v_import_updates_enabled,  ',');
 END IF;
 IF v_import_deletes_enabled is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'import_deletes_enabled\' : \'', v_import_deletes_enabled, '\',');
+	SET payload = CONCAT(payload,'\'import_deletes_enabled\' :  ', v_import_deletes_enabled,  ',');
 END IF;
 IF v_good_with_children is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'good_with_children\' : \'', v_good_with_children, '\',');
+	SET payload = CONCAT(payload,'\'good_with_children\' :  ', v_good_with_children,  ',');
 END IF;
 IF v_good_with_dogs is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'good_with_dogs\' : \'', v_good_with_dogs, '\',');
+	SET payload = CONCAT(payload,'\'good_with_dogs\' :  ', v_good_with_dogs,  ',');
 END IF;
 IF v_good_with_cats is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'good_with_cats\' : \'', v_good_with_cats, '\',');
+	SET payload = CONCAT(payload,'\'good_with_cats\' :  ', v_good_with_cats,  ',');
 END IF;
 IF v_good_with_other_animals is NOT NULL THEN
-	SET payload = CONCAT(payload,'\'good_with_other_animals\' : \'', v_good_with_other_animals, '\',');
+	SET payload = CONCAT(payload,'\'good_with_other_animals\' :  ', v_good_with_other_animals,  ',');
 END IF;
 IF v_other_animals is NOT NULL THEN
 	SET payload = CONCAT(payload,'\'other_animals\' : \'', v_other_animals, '\',');
